@@ -3,7 +3,7 @@ import ToDoItem from "./todoitem.js";
 import { getAnalytics } from "https://cdn.skypack.dev/@firebase/analytics";
 import { initializeApp } from "https://cdn.skypack.dev/@firebase/app";
 import { getFirestore } from "https://cdn.skypack.dev/@firebase/firestore";
-import { collection, addDoc, getDocs } from "https://cdn.skypack.dev/@firebase/firestore";
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, deleteField  } from "https://cdn.skypack.dev/@firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -47,10 +47,7 @@ const initApp = () => {
         if (list.length){
             const confirmed = confirm("Clear entire list?");
             if (confirmed){
-                //toDoList.clearList();
-                //TODO remove stuff
-                //updatePersistentData(toDoList.getList());
-                
+                removeAllFromFirestore(toDoList.getList());
             }
         }
     });
@@ -59,18 +56,30 @@ const initApp = () => {
     loadListObject();
 };
 
+const removeAllFromFirestore = async (list) => {
+    console.log("Removing all items");
+    var i = 0;
+    while (i<list.length) {
+        const ref = doc(db, "groceries", list[i]._id);
+        // Remove the 'capital' field from the document
+        deleteDoc(ref);
+        i+=1;
+    }
+    setTimeout(()=> {
+        clearListDisplay();
+    }, 250);
+};
+
 const loadListObject = async () => {
     const querySnapshot = await getDocs(collection(db, "groceries"));
     querySnapshot.forEach((doc) => {
-        const itemObj = JSON.parse(doc.data().item);
-        console.log(itemObj._id);
-        console.log(itemObj._item);
-        const newToDoItem = createNewItem(itemObj._id,itemObj._item);
+        const itemObj = doc.data();
+        const newToDoItem = createNewItem(doc.id, itemObj.item, itemObj.type);
         toDoList.addItemToList(newToDoItem);
         clearListDisplay();
         renderList();
     });
-}
+};
 
 const refreshPage = () => {
     clearListDisplay();
@@ -109,7 +118,7 @@ const buildListItem = (item) => {
     check.tabIndex = 0;
     addClickListenerToCheckbox(check);
     const label = document.createElement("label");
-    label.htmlFor = item.getId();
+    label.htmlFor = item.getItem();
     label.textContent = item.getItem();
     div.appendChild(check);
     div.appendChild(label);
@@ -119,21 +128,32 @@ const buildListItem = (item) => {
 
 const addClickListenerToCheckbox = (checkbox) => {
     checkbox.addEventListener("click", (event) =>{
-        //toDoList.removeItemFromList(checkbox.id);
-        // TODO: remove from data
-        //updatePersistentData(toDoList.getList());
-        //setTimeout(()=> {
-        //    refreshPage();
-        //}, 1000);
+
+        const ref = doc(db, "groceries", checkbox.id);
+        // Remove the 'capital' field from the document
+        deleteDoc(ref);
+
+        // Remove from local list
+        toDoList.removeItemFromList(checkbox.id);
+        console.log("Removed document ", checkbox.id);
+
+        setTimeout(()=> {
+            clearListDisplay();
+            renderList();
+        }, 1000);
     });
 };
 
 const updateFireStore = async (toDoItem) => {
     try {
+        console.log("type",toDoItem._type);
+        console.log("item",toDoItem._item);
         const docRef = await addDoc(collection(db, "groceries"), {
-          item: JSON.stringify(toDoItem)
+            type: "Food",
+            item: toDoItem._item
         });
         console.log("Document written with ID: ", docRef.id);
+        toDoItem._id = docRef.id;
       } catch (e) {
         console.error("Error adding document: ", e);
       }
@@ -170,6 +190,6 @@ const createNewItem = (itemId, itemText) => {
     toDo.setId(itemId);
     toDo.setItem(itemText);
     return toDo;
-} 
+};
 
 
