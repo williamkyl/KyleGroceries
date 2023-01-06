@@ -66,8 +66,8 @@ const loadListObject = async () => {
         console.log(itemObj._item);
         const newToDoItem = createNewItem(itemObj._id,itemObj._item);
         toDoList.addItemToList(newToDoItem);
+        refreshPage();
     });
-    refreshPage();
 }
 
 const refreshPage = () => {
@@ -75,6 +75,7 @@ const refreshPage = () => {
     renderList();
     clearItemEntryField();
     setFocusOnItemEntry();
+    console.log("Refreshed");
 };
 
 const clearListDisplay = () => {
