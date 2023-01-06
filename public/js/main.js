@@ -3,7 +3,7 @@ import ToDoItem from "./todoitem.js";
 import { getAnalytics } from "https://cdn.skypack.dev/@firebase/analytics";
 import { initializeApp } from "https://cdn.skypack.dev/@firebase/app";
 import { getFirestore } from "https://cdn.skypack.dev/@firebase/firestore";
-import { collection, addDoc } from "https://cdn.skypack.dev/@firebase/firestore";
+import { collection, addDoc, getDocs } from "https://cdn.skypack.dev/@firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -46,8 +46,9 @@ const initApp = () => {
         if (list.length){
             const confirmed = confirm("Clear entire list?");
             if (confirmed){
-                toDoList.clearList();
-                updatePersistentData(toDoList.getList());
+                //toDoList.clearList();
+                //TODO remove stuff
+                //updatePersistentData(toDoList.getList());
                 refreshPage();
             }
         }
@@ -55,18 +56,18 @@ const initApp = () => {
     // Procedural
     // Load list
     loadListObject();
-    // refresh page
-    refreshPage();
 };
 
-const loadListObject = () => {
-    const storedList = localStorage.getItem("myToDoList");
-    if (typeof storedList !== "string") return;
-    const parsedList = JSON.parse(storedList);
-    parsedList.forEach(itemObj => {
-        const newToDoItem = createNewItem(itemObj._id, itemObj._item);
+const loadListObject = async () => {
+    const querySnapshot = await getDocs(collection(db, "groceries"));
+    querySnapshot.forEach((doc) => {
+        const itemObj = JSON.parse(doc.data().item);
+        console.log(itemObj._id);
+        console.log(itemObj._item);
+        const newToDoItem = createNewItem(itemObj._id,itemObj._item);
         toDoList.addItemToList(newToDoItem);
     });
+    refreshPage();
 }
 
 const refreshPage = () => {
@@ -115,27 +116,22 @@ const buildListItem = (item) => {
 
 const addClickListenerToCheckbox = (checkbox) => {
     checkbox.addEventListener("click", (event) =>{
-        toDoList.removeItemFromList(checkbox.id);
-        // TODO: remove from persistent data
-        updatePersistentData(toDoList.getList());
-        setTimeout(()=> {
-            refreshPage();
-        }, 1000);
+        //toDoList.removeItemFromList(checkbox.id);
+        // TODO: remove from data
+        //updatePersistentData(toDoList.getList());
+        //setTimeout(()=> {
+        //    refreshPage();
+        //}, 1000);
     });
 };
-
-const updatePersistentData = (listArray) => {
-    localStorage.setItem("myToDoList", JSON.stringify(listArray));
-}
 
 const updateFireStore = async (toDoItem) => {
     try {
         const docRef = await addDoc(collection(db, "groceries"), {
           Category: "Food",
-          last: JSON.stringify(toDoItem)
+          item: JSON.stringify(toDoItem)
         });
         console.log("Document written with ID: ", docRef.id);
-        print();
       } catch (e) {
         console.error("Error adding document: ", e);
       }
@@ -155,7 +151,6 @@ const processSubmission = () => {
     const nextItemId = calcNextItemId();
     const toDoItem = createNewItem(nextItemId, newEntryText);
     toDoList.addItemToList(toDoItem);
-    updatePersistentData(toDoList.getList());
     updateFireStore(toDoItem);
     refreshPage();
 };
