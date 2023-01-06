@@ -33,6 +33,7 @@ document.addEventListener("readystatechange",(event)=>{
 
 
 const initApp = () => {
+    toDoList.clearList();
     // Add listeners
     const itemEntryForm = document.getElementById("itemEntryForm");
     itemEntryForm.addEventListener("submit", (event)=> {
@@ -49,7 +50,7 @@ const initApp = () => {
                 //toDoList.clearList();
                 //TODO remove stuff
                 //updatePersistentData(toDoList.getList());
-                refreshPage();
+                
             }
         }
     });
@@ -61,17 +62,13 @@ const initApp = () => {
 const loadListObject = async () => {
     const querySnapshot = await getDocs(collection(db, "groceries"));
     querySnapshot.forEach((doc) => {
-        try {
-            const itemObj = JSON.parse(doc.data().item);
-            console.log(itemObj._id);
-            console.log(itemObj._item);
-            const newToDoItem = createNewItem(itemObj._id,itemObj._item);
-            toDoList.addItemToList(newToDoItem);
-            refreshPage();
-        }
-        catch{
-            return;
-        }
+        const itemObj = JSON.parse(doc.data().item);
+        console.log(itemObj._id);
+        console.log(itemObj._item);
+        const newToDoItem = createNewItem(itemObj._id,itemObj._item);
+        toDoList.addItemToList(newToDoItem);
+        clearListDisplay();
+        renderList();
     });
 }
 
@@ -134,14 +131,13 @@ const addClickListenerToCheckbox = (checkbox) => {
 const updateFireStore = async (toDoItem) => {
     try {
         const docRef = await addDoc(collection(db, "groceries"), {
-          Category: "Food",
           item: JSON.stringify(toDoItem)
         });
         console.log("Document written with ID: ", docRef.id);
       } catch (e) {
         console.error("Error adding document: ", e);
       }
-}
+};
 
 const clearItemEntryField = () => {
     document.getElementById("newItem").value = "";
@@ -166,12 +162,7 @@ const getNewEntry = () => {
 };
 
 const calcNextItemId = () => {
-    let nextItemId = 1;
-    const list = toDoList.getList();
-    if (list.length >0) {
-        nextItemId = list[list.length - 1].getId() + 1;
-    }
-    return nextItemId;
+    return "Food";
 };
 
 const createNewItem = (itemId, itemText) => {
