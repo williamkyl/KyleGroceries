@@ -61,12 +61,16 @@ const initApp = () => {
 const loadListObject = async () => {
     const querySnapshot = await getDocs(collection(db, "groceries"));
     querySnapshot.forEach((doc) => {
-        const itemObj = JSON.parse(doc.data().item);
+        try {const itemObj = JSON.parse(doc.data().item);
         console.log(itemObj._id);
         console.log(itemObj._item);
         const newToDoItem = createNewItem(itemObj._id,itemObj._item);
         toDoList.addItemToList(newToDoItem);
         refreshPage();
+        }
+        catch{
+            return;
+        }
     });
 }
 
